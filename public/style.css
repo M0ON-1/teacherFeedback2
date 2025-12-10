@@ -1,0 +1,91 @@
+:root {
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    "Helvetica Neue",
+    Arial;
+}
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f2f4f6;
+  margin: 0;
+}
+.card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  width: 360px;
+}
+.card.wide {
+  width: 900px;
+}
+h1 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+}
+.rating label {
+  margin-right: 8px;
+}
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  margin-top: 6px;
+}
+button {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: #007bff;
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+.muted {
+  color: #666;
+  margin-top: 10px;
+  font-size: 14px;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.big {
+  font-size: 20px;
+  font-weight: 600;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+th,
+td {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+.text-red {
+  color: #dc3545;
+  font-weight: 600;
+}
+.text-green {
+  color: #28a745;
+  font-weight: 600;
+}
+.text-yellow {
+  color: #ffc107;
+  font-weight: 600;
+}

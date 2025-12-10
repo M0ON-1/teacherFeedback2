@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Панель викладача — Відгуки</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main class="card wide">
+    <h1>Адмін — Відгуки студентів</h1>
+
+    <div class="controls">
+      <label>Прийом відгуків:
+        <input id="toggle" type="checkbox" />
+      </label>
+      <div id="avg" class="big">Середня: —</div>
+    </div>
+
+    <section>
+      <canvas id="chart" width="400" height="150"></canvas>
+    </section>
+
+    <section>
+      <table id="table">
+        <thead><tr><th>Оцінка</th><th>Коментар</th><th>Час (UTC)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
