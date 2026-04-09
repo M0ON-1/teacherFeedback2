@@ -95,3 +95,109 @@ function escapeHtml(text) {
 }
 
 loadStatus();
+
+// ==========================================
+// ІНТЕГРАЦІЯ AI АГЕНТА (Google Gemini API - БЕЗКОШТОВНО)
+// ==========================================
+const aiBtn = document.getElementById('aiBtn');
+const aiSummary = document.getElementById('aiSummary');
+let currentComments = [];
+
+onSnapshot(q, snapshot => {
+  currentComments = [];
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    if (d.comment && d.comment.trim() !== '') {
+      currentComments.push(`Оцінка: ${d.rating}, Коментар: "${d.comment}"`);
+    }
+  });
+});
+
+aiBtn.addEventListener('click', async () => {
+  const maxComments = 50;
+  const commentsToAnalyze = currentComments.slice(0, maxComments);
+
+  if (commentsToAnalyze.length === 0) {
+    aiSummary.textContent = "Немає текстових коментарів для аналізу.";
+    return;
+  }
+
+  aiBtn.disabled = true;
+  aiSummary.innerHTML = "<em>Аналізую відгуки... Це може зайняти 10-15 секунд...</em>";
+
+  // ТВІЙ КЛЮЧ
+  const apiKey = "AIzaSyCtMu4-UjtW14yaN-AQ6jd7ThVB70R4Jdc"; 
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+  const prompt = `Ти помічник викладача. Проаналізуй наступні відгуки студентів про пару. 
+  Зроби дуже коротке резюме (3-4 речення). Виділи головні плюси та мінуси, якщо вони є.
+  Відгуки:\n` + commentsToAnalyze.join('\n');
+
+  let retries = 3;
+  let success = false;
+
+  while (retries > 0 && !success) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }]
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      // ДОДАНО: Перевірка на Too Many Requests на рівні HTTP-статусу
+      if (response.status === 429) {
+        throw new Error("TOO_MANY_REQUESTS");
+      }
+
+      const data = await response.json();
+      
+      // ДОДАНО: Перевірка на Too Many Requests на рівні тіла помилки API
+      if (data.error) {
+        if (data.error.code === 429 || data.error.status === "RESOURCE_EXHAUSTED") {
+           throw new Error("TOO_MANY_REQUESTS");
+        }
+        throw new Error(data.error.message);
+      }
+
+      const aiText = data.candidates[0].content.parts[0].text;
+      aiSummary.innerHTML = aiText.replace(/\n/g, '<br>'); 
+      success = true; 
+
+    } catch (err) {
+      // Якщо це помилка ліміту запитів — зупиняємо цикл і виводимо повідомлення
+      if (err.message === "TOO_MANY_REQUESTS") {
+        aiSummary.innerHTML = "<strong style='color: #dc3545;'>Увага:</strong> На даний момент кількість запитів до штучного інтелекту перевищена (Too Many Requests). Будь ласка, зачекайте 1-2 хвилини і спробуйте ще раз.";
+        break; // Перериваємо цикл while (повторних спроб не буде)
+      }
+
+      retries--;
+      console.warn(`Спроба невдала. Залишилось спроб: ${retries}`, err);
+
+      if (retries === 0) {
+        if (err.name === 'AbortError') {
+          aiSummary.textContent = "Помилка: Сервер AI довго не відповідав (Тайм-аут). Спробуйте пізніше.";
+        } else {
+          aiSummary.textContent = "Сталася помилка при зверненні до AI: " + err.message;
+        }
+      } else {
+        // Якщо це будь-яка ІНША помилка (наприклад, збій мережі), робимо повторну спробу
+        aiSummary.innerHTML = `<em>Сервер перевантажений. Автоматична повторна спроба... (Залишилось: ${retries})</em>`;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  }
+
+  aiBtn.disabled = false;
+});
