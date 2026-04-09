@@ -1,5 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+import {
   getFirestore, collection, query, orderBy, onSnapshot, doc, getDoc, setDoc
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
@@ -14,7 +17,16 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
+
+const loginContainer = document.getElementById('loginContainer');
+const adminContent = document.getElementById('adminContent');
+const loginForm = document.getElementById('loginForm');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const loginError = document.getElementById('loginError');
+const logoutBtn = document.getElementById('logoutBtn');
 
 const toggle = document.getElementById('toggle');
 const avgEl = document.getElementById('avg');
@@ -22,6 +34,45 @@ const tbody = document.querySelector('#table tbody');
 const chartCtx = document.getElementById('chart').getContext('2d');
 
 let chart;
+let currentComments = [];
+
+// Авторизація
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // Користувач увійшов
+    loginContainer.style.display = 'none';
+    adminContent.style.display = 'block';
+    loadStatus();
+    // Запуск слухача відгуків
+    startListening();
+  } else {
+    // Користувач не увійшов
+    loginContainer.style.display = 'block';
+    adminContent.style.display = 'none';
+    // Зупинити слухача відгуків
+    stopListening();
+  }
+});
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = emailInput.value;
+  const password = passwordInput.value;
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    loginError.textContent = '';
+  } catch (error) {
+    loginError.textContent = 'Помилка входу: ' + error.message;
+  }
+});
+
+logoutBtn.addEventListener('click', async () => {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error('Помилка виходу:', error);
+  }
+});
 
 // функція оновлення статусу тумблера із БД
 async function loadStatus() {
@@ -39,79 +90,83 @@ toggle.addEventListener('change', async () => {
   } catch (e) { console.error(e); alert('Не вдалося змінити статус'); }
 });
 
-// слухаємо колекцію feedbacks у реальному часі
-const q = query(collection(db, 'feedbacks'), orderBy('timestamp', 'desc'));
-onSnapshot(q, snapshot => {
-  const rows = [];
-  const counts = [0,0,0,0,0]; // індекси 0->1,1->2...
-  let sum = 0, n = 0;
+let unsubscribe; // для відписки від слухача
 
-  tbody.innerHTML = '';
-  snapshot.forEach(doc => {
-    const d = doc.data();
-    const rating = d.rating || 0;
-    const comment = d.comment || '';
-    const ts = d.timestamp ? d.timestamp.toDate().toISOString().replace('T',' ').slice(0,19) : '';
-    rows.push({rating,comment,ts});
+function startListening() {
+  const q = query(collection(db, 'feedbacks'), orderBy('timestamp', 'desc'));
+  unsubscribe = onSnapshot(q, snapshot => {
+    const rows = [];
+    const counts = [0,0,0,0,0]; // індекси 0->1,1->2...
+    let sum = 0, n = 0;
 
-    if (rating >=1 && rating <=5) {
-      counts[rating-1] += 1;
-      sum += rating;
-      n++;
+    tbody.innerHTML = '';
+    currentComments = []; // Очистити коментарі для AI
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      const rating = d.rating || 0;
+      const comment = d.comment || '';
+      const ts = d.timestamp ? d.timestamp.toDate().toISOString().replace('T',' ').slice(0,19) : '';
+      rows.push({rating,comment,ts});
+
+      if (rating >=1 && rating <=5) {
+        counts[rating-1] += 1;
+        sum += rating;
+        n++;
+      }
+
+      // Зібрати коментарі для AI
+      if (d.comment && d.comment.trim() !== '') {
+        currentComments.push(`Оцінка: ${d.rating}, Коментар: "${d.comment}"`);
+      }
+    });
+
+    // таблиця
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="${r.rating < 3 ? 'text-red' : r.rating > 3 ? 'text-green' : 'text-yellow'}">${r.rating}</td><td>${escapeHtml(r.comment)}</td><td>${r.ts}</td>`;
+      tbody.appendChild(tr);
+    }
+
+    const avg = n ? (sum / n).toFixed(2) : '—';
+    avgEl.textContent = `Середня: ${avg}`;
+
+    // оновити діаграму
+    const labels = ['1','2','3','4','5'];
+    const data = counts;
+    if (!chart) {
+      chart = new Chart(chartCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ label: 'Кількість оцінок', data }]
+        },
+        options: { responsive:true, maintainAspectRatio:false }
+      });
+    } else {
+      chart.data.datasets[0].data = data;
+      chart.update();
     }
   });
+}
 
-  // таблиця
-  for (const r of rows) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="${r.rating < 3 ? 'text-red' : r.rating > 3 ? 'text-green' : 'text-yellow'}">${r.rating}</td><td>${escapeHtml(r.comment)}</td><td>${r.ts}</td>`;
-    tbody.appendChild(tr);
+function stopListening() {
+  if (unsubscribe) {
+    unsubscribe();
+    unsubscribe = null;
   }
-
-  const avg = n ? (sum / n).toFixed(2) : '—';
-  avgEl.textContent = `Середня: ${avg}`;
-
-  // оновити діаграму
-  const labels = ['1','2','3','4','5'];
-  const data = counts;
-  if (!chart) {
-    chart = new Chart(chartCtx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{ label: 'Кількість оцінок', data }]
-      },
-      options: { responsive:true, maintainAspectRatio:false }
-    });
-  } else {
-    chart.data.datasets[0].data = data;
-    chart.update();
-  }
-});
+}
 
 // escape HTML для безпеки простого відображення
 function escapeHtml(text) {
   return text.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-loadStatus();
 
 // ==========================================
 // ІНТЕГРАЦІЯ AI АГЕНТА (Google Gemini API - БЕЗКОШТОВНО)
 // ==========================================
 const aiBtn = document.getElementById('aiBtn');
 const aiSummary = document.getElementById('aiSummary');
-let currentComments = [];
-
-onSnapshot(q, snapshot => {
-  currentComments = [];
-  snapshot.forEach(doc => {
-    const d = doc.data();
-    if (d.comment && d.comment.trim() !== '') {
-      currentComments.push(`Оцінка: ${d.rating}, Коментар: "${d.comment}"`);
-    }
-  });
-});
 
 aiBtn.addEventListener('click', async () => {
   const maxComments = 50;

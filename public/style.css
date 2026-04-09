@@ -25,6 +25,35 @@ body {
 .card.wide {
   width: 900px;
 }
+#loginContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+#loginForm {
+  display: flex;
+  flex-direction: column;
+}
+#loginForm label {
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+#loginForm input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+#loginError {
+  color: #dc3545;
+  margin-top: 10px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
 h1 {
   margin: 0 0 12px 0;
   font-size: 20px;
