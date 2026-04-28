@@ -161,6 +161,7 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+<<<<<<< HEAD
 
 // ==========================================
 // ІНТЕГРАЦІЯ AI АГЕНТА (Google Gemini API - БЕЗКОШТОВНО)
@@ -256,3 +257,6 @@ aiBtn.addEventListener('click', async () => {
 
   aiBtn.disabled = false;
 });
+=======
+loadStatus();
+>>>>>>> parent of cae9fcf (Implement AI feedback analysis feature with integration to Google Gemini API)
