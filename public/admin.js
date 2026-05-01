@@ -161,8 +161,6 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-<<<<<<< HEAD
-
 // ==========================================
 // ІНТЕГРАЦІЯ AI АГЕНТА (Google Gemini API - БЕЗКОШТОВНО)
 // ==========================================
@@ -182,7 +180,7 @@ aiBtn.addEventListener('click', async () => {
   aiSummary.innerHTML = "<em>Аналізую відгуки... Це може зайняти 10-15 секунд...</em>";
 
   // ТВІЙ КЛЮЧ
-  const apiKey = "AIzaSyCtMu4-UjtW14yaN-AQ6jd7ThVB70R4Jdc"; 
+  const apiKey = "AIzaSyA1kW_0Pz_gxY4oR7YiWzVGn_EPTpSByk8"; 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const prompt = `Ти помічник викладача. Проаналізуй наступні відгуки студентів про пару. 
@@ -257,6 +255,3 @@ aiBtn.addEventListener('click', async () => {
 
   aiBtn.disabled = false;
 });
-=======
-loadStatus();
->>>>>>> parent of cae9fcf (Implement AI feedback analysis feature with integration to Google Gemini API)
