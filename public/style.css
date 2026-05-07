@@ -118,3 +118,34 @@ td {
   color: #ffc107;
   font-weight: 600;
 }
+/* Стилі для dropdown'ів */
+select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+form label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+form label:first-child {
+  margin-top: 0;
+}
+/* Контейнер для графіка */
+section {
+  margin: 20px 0;
+}
+section:first-of-type {
+  margin-top: 15px;
+}

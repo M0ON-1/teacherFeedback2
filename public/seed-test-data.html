@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Seed Test Data — Додавання тестових даних</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      max-width: 500px;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin: 0 0 20px 0;
+    }
+    .info {
+      background: #e3f2fd;
+      border-left: 4px solid #2196F3;
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .status {
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: 500;
+    }
+    .status.pending {
+      background: #f5f5f5;
+      color: #666;
+    }
+    .status.success {
+      background: #c8e6c9;
+      color: #2e7d32;
+    }
+    .status.error {
+      background: #ffcdd2;
+      color: #c62828;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: #764ba2;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin: 15px 0;
+      text-align: center;
+    }
+    .stat-item {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #999;
+      margin-top: 5px;
+    }
+    .details {
+      background: #f9f9f9;
+      padding: 12px;
+      border-radius: 4px;
+      margin: 15px 0;
+      max-height: 250px;
+      overflow-y: auto;
+      font-size: 12px;
+      font-family: monospace;
+      line-height: 1.4;
+    }
+    .log {
+      color: #333;
+      margin: 4px 0;
+    }
+    .log.success {
+      color: #2e7d32;
+    }
+    .log.error {
+      color: #c62828;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>🌱 Додавання тестових даних</h1>
+    
+    <div class="info">
+      <strong>Що буде додано:</strong><br>
+      ✓ 3 викладачи (з email)<br>
+      ✓ 9 предметів (3 на кожного)<br>
+      ✓ 15 приклад відгуків<br>
+      ✓ Всі дані пов'язані з програмуванням
+    </div>
+
+    <div class="warning">
+      <strong>⚠️ Важливо:</strong><br>
+      Для входу в адмін-панель потрібна реєстрація в Firebase Auth з email викладача!
+    </div>
+
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-value" id="teacherCount">0</div>
+        <div class="stat-label">Викладачів</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="subjectCount">0</div>
+        <div class="stat-label">Предметів</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="feedbackCount">0</div>
+        <div class="stat-label">Відгуків</div>
+      </div>
+    </div>
+
+    <button id="seedBtn" onclick="startSeeding()">
+      🚀 Додати тестові дані
+    </button>
+
+    <div id="status" class="status pending" style="display: none;">
+      ⏳ Додаю дані...
+    </div>
+
+    <div class="details" id="details" style="display: none;">
+      <div class="log">Запускаю додавання даних...</div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getFirestore, collection, doc, setDoc, addDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBj1xLyjUL-1r5JYLKMegwO9UWdKnmK9G8",
+      authDomain: "teacherfeedback-fb629.firebaseapp.com",
+      projectId: "teacherfeedback-fb629",
+      storageBucket: "teacherfeedback-fb629.firebasestorage.app",
+      messagingSenderId: "122928960162",
+      appId: "1:122928960162:web:fae05648716078a4b5fdfb",
+      measurementId: "G-NP8FX9095T"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const teachers = [
+      { id: 'teacher_001', name: 'Олег Коваленко', email: 'oleg@example.com' },
+      { id: 'teacher_002', name: 'Ніна Петренко', email: 'nina@example.com' },
+      { id: 'teacher_003', name: 'Максим Іванов', email: 'maksym@example.com' }
+    ];
+
+    const subjects = [
+      { name: 'JavaScript Основи', teacherId: 'teacher_001' },
+      { name: 'React.js для веб-розробки', teacherId: 'teacher_001' },
+      { name: 'Node.js та REST API', teacherId: 'teacher_001' },
+      { name: 'Python для Data Science', teacherId: 'teacher_002' },
+      { name: 'Django Framework', teacherId: 'teacher_002' },
+      { name: 'Machine Learning Вступ', teacherId: 'teacher_002' },
+      { name: 'Java та ООП', teacherId: 'teacher_003' },
+      { name: 'Spring Boot мікросервіси', teacherId: 'teacher_003' },
+      { name: 'SQL та Бази Даних', teacherId: 'teacher_003' }
+    ];
+
+    const sampleFeedbacks = [
+      { rating: 5, comment: 'Чудовий курс! Все дуже зрозуміло пояснено', teacherId: 'teacher_001', subject: 'JavaScript Основи' },
+      { rating: 4, comment: 'Добре, але можна більше практичних завдань', teacherId: 'teacher_001', subject: 'JavaScript Основи' },
+      { rating: 5, comment: 'Найкращий викладач JavaScript!', teacherId: 'teacher_001', subject: 'JavaScript Основи' },
+      { rating: 4, comment: 'Цікавий матеріал, трохи швидко', teacherId: 'teacher_001', subject: 'React.js для веб-розробки' },
+      { rating: 5, comment: 'React пояснено дуже детально', teacherId: 'teacher_001', subject: 'React.js для веб-розробки' },
+      { rating: 5, comment: 'Фантастичні пояснення, хороші практичні приклади', teacherId: 'teacher_002', subject: 'Python для Data Science' },
+      { rating: 3, comment: 'Нормально, але деякі теми складні', teacherId: 'teacher_002', subject: 'Python для Data Science' },
+      { rating: 4, comment: 'Хороший курс з хорошими приклад', teacherId: 'teacher_002', subject: 'Python для Data Science' },
+      { rating: 5, comment: 'Найкраще вивчення Django в університеті!', teacherId: 'teacher_002', subject: 'Django Framework' },
+      { rating: 4, comment: 'Добре пояснено, але було б більше реальних проектів', teacherId: 'teacher_002', subject: 'Django Framework' },
+      { rating: 5, comment: 'ООП-концепції прояснені на прикладах', teacherId: 'teacher_003', subject: 'Java та ООП' },
+      { rating: 4, comment: 'Добре, але деякі теми було важко зрозуміти', teacherId: 'teacher_003', subject: 'Java та ООП' },
+      { rating: 5, comment: 'Потужний курс, здобув багато знань', teacherId: 'teacher_003', subject: 'Java та ООП' },
+      { rating: 4, comment: 'Корисно для розробки мікросервісів', teacherId: 'teacher_003', subject: 'Spring Boot мікросервіси' },
+      { rating: 5, comment: 'Spring Boot став зрозумілим!', teacherId: 'teacher_003', subject: 'Spring Boot мікросервіси' }
+    ];
+
+    window.startSeeding = async function() {
+      const seedBtn = document.getElementById('seedBtn');
+      const statusEl = document.getElementById('status');
+      const detailsEl = document.getElementById('details');
+      const teacherCountEl = document.getElementById('teacherCount');
+      const subjectCountEl = document.getElementById('subjectCount');
+      const feedbackCountEl = document.getElementById('feedbackCount');
+
+      seedBtn.disabled = true;
+      statusEl.style.display = 'block';
+      statusEl.className = 'status pending';
+      detailsEl.style.display = 'block';
+      detailsEl.innerHTML = '';
+
+      try {
+        let log = (msg, isError = false) => {
+          const logEl = document.createElement('div');
+          logEl.className = isError ? 'log error' : 'log success';
+          logEl.textContent = msg;
+          detailsEl.appendChild(logEl);
+          detailsEl.scrollTop = detailsEl.scrollHeight;
+        };
+
+        // Додати викладачів
+        log('👨‍🏫 Додаю викладачів...');
+        for (const teacher of teachers) {
+          await setDoc(doc(db, 'teachers', teacher.id), {
+            name: teacher.name,
+            email: teacher.email
+          });
+          log(`  ✓ ${teacher.name}`);
+        }
+        teacherCountEl.textContent = teachers.length;
+
+        // Додати предмети
+        log('📚 Додаю предмети...');
+        const subjectIds = {};
+        for (const subject of subjects) {
+          const docRef = await addDoc(collection(db, 'subjects'), {
+            name: subject.name,
+            teacherId: subject.teacherId
+          });
+          subjectIds[subject.name] = docRef.id;
+          log(`  ✓ ${subject.name}`);
+        }
+        subjectCountEl.textContent = subjects.length;
+
+        // Додати відгуки
+        log('⭐ Додаю приклади відгуків...');
+        for (const feedback of sampleFeedbacks) {
+          const subjectId = subjectIds[feedback.subject];
+          await addDoc(collection(db, 'feedbacks'), {
+            rating: feedback.rating,
+            comment: feedback.comment,
+            teacherId: feedback.teacherId,
+            subjectId: subjectId,
+            timestamp: serverTimestamp()
+          });
+          log(`  ✓ ${feedback.subject} → оцінка ${feedback.rating}`);
+        }
+        feedbackCountEl.textContent = sampleFeedbacks.length;
+
+        statusEl.className = 'status success';
+        statusEl.textContent = '✅ Готово! Тестові дані успішно додані';
+        log('\n✅ Всі дані додано успішно!');
+        log('Тепер ви можете:');
+        log('  1. Відкрити index.html для студента');
+        log('  2. Відкрити admin.html для викладача');
+
+      } catch (error) {
+        statusEl.className = 'status error';
+        statusEl.textContent = '❌ Помилка при додаванні даних';
+        console.error(error);
+      }
+
+      seedBtn.disabled = false;
+    };
+  </script>
+</body>
+</html>

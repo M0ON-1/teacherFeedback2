@@ -3,7 +3,7 @@ import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 import {
-  getFirestore, collection, query, orderBy, onSnapshot, doc, getDoc, setDoc
+  getFirestore, collection, query, orderBy, onSnapshot, doc, getDoc, setDoc, where, getDocs
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -32,24 +32,29 @@ const toggle = document.getElementById('toggle');
 const avgEl = document.getElementById('avg');
 const tbody = document.querySelector('#table tbody');
 const chartCtx = document.getElementById('chart').getContext('2d');
+const subjectFilter = document.getElementById('subject-filter');
 
 let chart;
 let currentComments = [];
+let currentUser = null;
+let allFeedbacks = []; // Зберігати всі відгуки викладача
+let teacherSubjects = []; // Предмети поточного викладача
 
 // Авторизація
 onAuthStateChanged(auth, (user) => {
   if (user) {
     // Користувач увійшов
+    currentUser = user; // Зберігти поточного користувача
     loginContainer.style.display = 'none';
     adminContent.style.display = 'block';
     loadStatus();
-    // Запуск слухача відгуків
+    loadTeacherSubjects(); // Завантажити предмети викладача
     startListening();
   } else {
     // Користувач не увійшов
+    currentUser = null;
     loginContainer.style.display = 'block';
     adminContent.style.display = 'none';
-    // Зупинити слухача відгуків
     stopListening();
   }
 });
@@ -90,63 +95,145 @@ toggle.addEventListener('change', async () => {
   } catch (e) { console.error(e); alert('Не вдалося змінити статус'); }
 });
 
+// Фільтрація за предметом
+subjectFilter.addEventListener('change', () => {
+  updateAnalytics();
+});
+
+// Завантажити предмети поточного викладача
+async function loadTeacherSubjects() {
+  if (!currentUser) return;
+  
+  try {
+    const subjectsRef = collection(db, 'subjects');
+    const q = query(subjectsRef, where('teacherId', '==', currentUser.uid));
+    const snapshot = await getDocs(q);
+    
+    teacherSubjects = [];
+    subjectFilter.innerHTML = '<option value="">-- Всі предмети --</option>';
+    
+    snapshot.forEach(doc => {
+      teacherSubjects.push({ id: doc.id, name: doc.data().name });
+      const option = document.createElement('option');
+      option.value = doc.id;
+      option.textContent = doc.data().name || 'Без назви';
+      subjectFilter.appendChild(option);
+    });
+  } catch (err) {
+    console.error('Помилка завантаження предметів:', err);
+  }
+}
+
 let unsubscribe; // для відписки від слухача
 
 function startListening() {
-  const q = query(collection(db, 'feedbacks'), orderBy('timestamp', 'desc'));
+  if (!currentUser) return;
+  
+  // Фільтр за поточним викладачем (UID)
+  const q = query(
+    collection(db, 'feedbacks'),
+    where('teacherId', '==', currentUser.uid),  // ✓ NEW - фільтр за викладачем
+    orderBy('timestamp', 'desc')
+  );
+  
   unsubscribe = onSnapshot(q, snapshot => {
-    const rows = [];
-    const counts = [0,0,0,0,0]; // індекси 0->1,1->2...
-    let sum = 0, n = 0;
-
-    tbody.innerHTML = '';
-    currentComments = []; // Очистити коментарі для AI
+    allFeedbacks = []; // Очистити всі відгуки
+    
     snapshot.forEach(doc => {
-      const d = doc.data();
-      const rating = d.rating || 0;
-      const comment = d.comment || '';
-      const ts = d.timestamp ? d.timestamp.toDate().toISOString().replace('T',' ').slice(0,19) : '';
-      rows.push({rating,comment,ts});
-
-      if (rating >=1 && rating <=5) {
-        counts[rating-1] += 1;
-        sum += rating;
-        n++;
-      }
-
-      // Зібрати коментарі для AI
-      if (d.comment && d.comment.trim() !== '') {
-        currentComments.push(`Оцінка: ${d.rating}, Коментар: "${d.comment}"`);
-      }
+      allFeedbacks.push({
+        id: doc.id,
+        ...doc.data()
+      });
     });
+    
+    // Оновити аналітику з фільтром
+    updateAnalytics();
+  });
+}
 
-    // таблиця
-    for (const r of rows) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td class="${r.rating < 3 ? 'text-red' : r.rating > 3 ? 'text-green' : 'text-yellow'}">${r.rating}</td><td>${escapeHtml(r.comment)}</td><td>${r.ts}</td>`;
-      tbody.appendChild(tr);
+// Оновити таблицю, графік та статистику за обраним фільтром
+function updateAnalytics() {
+  const selectedSubjectId = subjectFilter.value;
+  
+  // Фільтрувати дані за предметом (якщо вибрано)
+  let feedbacksToDisplay = allFeedbacks;
+  if (selectedSubjectId) {
+    feedbacksToDisplay = allFeedbacks.filter(f => f.subjectId === selectedSubjectId);
+  }
+  
+  const rows = [];
+  const counts = [0, 0, 0, 0, 0]; // індекси 0->1,1->2...
+  let sum = 0, n = 0;
+
+  tbody.innerHTML = '';
+  currentComments = []; // Очистити коментарі для AI
+
+  feedbacksToDisplay.forEach(d => {
+    const rating = d.rating || 0;
+    const comment = d.comment || '';
+    const ts = d.timestamp ? d.timestamp.toDate().toISOString().replace('T', ' ').slice(0, 19) : '';
+    rows.push({ rating, comment, ts });
+
+    if (rating >= 1 && rating <= 5) {
+      counts[rating - 1] += 1;
+      sum += rating;
+      n++;
     }
 
-    const avg = n ? (sum / n).toFixed(2) : '—';
-    avgEl.textContent = `Середня: ${avg}`;
-
-    // оновити діаграму
-    const labels = ['1','2','3','4','5'];
-    const data = counts;
-    if (!chart) {
-      chart = new Chart(chartCtx, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{ label: 'Кількість оцінок', data }]
-        },
-        options: { responsive:true, maintainAspectRatio:false }
-      });
-    } else {
-      chart.data.datasets[0].data = data;
-      chart.update();
+    // Зібрати коментарі для AI (тільки відфільтровані)
+    if (d.comment && d.comment.trim() !== '') {
+      currentComments.push(`Оцінка: ${d.rating}, Коментар: "${d.comment}"`);
     }
   });
+
+  // Таблиця
+  for (const r of rows) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="${r.rating < 3 ? 'text-red' : r.rating > 3 ? 'text-green' : 'text-yellow'}">${r.rating}</td><td>${escapeHtml(r.comment)}</td><td>${r.ts}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  const avg = n ? (sum / n).toFixed(2) : '—';
+  avgEl.textContent = `Середня: ${avg}`;
+
+  // Оновити діаграму
+  const labels = ['1', '2', '3', '4', '5'];
+  const data = counts;
+  if (!chart) {
+    chart = new Chart(chartCtx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ 
+          label: 'Кількість оцінок', 
+          data,
+          backgroundColor: 'rgba(0, 123, 255, 0.7)',
+          borderColor: 'rgba(0, 123, 255, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: { 
+        responsive: true, 
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: Math.max(...counts, 5)
+          }
+        }
+      }
+    });
+  } else {
+    chart.data.datasets[0].data = data;
+    chart.options.scales.y.max = Math.max(...counts, 5);
+    chart.update();
+  }
 }
 
 function stopListening() {
@@ -160,6 +247,7 @@ function stopListening() {
 function escapeHtml(text) {
   return text.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
+
 
 // ==========================================
 // ІНТЕГРАЦІЯ AI АГЕНТА (Google Gemini API - БЕЗКОШТОВНО)
@@ -180,7 +268,7 @@ aiBtn.addEventListener('click', async () => {
   aiSummary.innerHTML = "<em>Аналізую відгуки... Це може зайняти 10-15 секунд...</em>";
 
   // ТВІЙ КЛЮЧ
-  const apiKey = "AIzaSyA1kW_0Pz_gxY4oR7YiWzVGn_EPTpSByk8"; 
+  const apiKey = "AIzaSyBijz5xixm7d6Op3wWDOvMv6veuVsWCfSQ"; 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const prompt = `Ти помічник викладача. Проаналізуй наступні відгуки студентів про пару. 
@@ -255,3 +343,4 @@ aiBtn.addEventListener('click', async () => {
 
   aiBtn.disabled = false;
 });
+loadStatus();
