@@ -83,3 +83,4 @@ firebaseConfig.js
 .vscode/
 .idea/
 .DS_Store
+*.md

@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Колекція учителів (вчителі)
+    // Читання: будь-хто (тому що студенти мають бачити список учителів)
+    // Запис: тільки сам учитель (за своїм UID)
+    match /teachers/{document=**} {
+      allow read: if true;
+      allow write: if request.auth.uid == resource.id;
+    }
+    
+    // Колекція предметів (subjects)
+    // Читання: будь-хто (студенти мають бачити предмети)
+    // Запис: тільки учитель, якому належить предмет
+    match /subjects/{document=**} {
+      allow read: if true;
+      allow write: if request.auth.uid == request.resource.data.teacherId;
+    }
+    
+    // Колекція відгуків (feedbacks)
+    // Читання: учитель може читати тільки свої відгуки (teacherId == uid)
+    // Запис: будь-хто може створити відгук, але обов'язково з teacherId та subjectId
+    match /feedbacks/{document=**} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.teacherId;
+      allow create: if request.resource.data.teacherId != null && 
+                       request.resource.data.subjectId != null &&
+                       request.resource.data.rating != null;
+      allow update, delete: if false;
+    }
+    
+    // Колекція налаштувань (settings)
+    // Читання: будь-хто
+    // Запис: тільки аутентифіковані користувачі
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if request.auth.uid != null;
+    }
+  }
+}
