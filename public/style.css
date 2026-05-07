@@ -245,24 +245,56 @@ tbody tr:hover {
 }
 /* Стилі для dropdown'ів */
 select {
-  padding: 12px;
-  border: 1.5px solid var(--border-color);
-  border-radius: 8px;
-  margin-top: 6px;
+  /* Скидання стандартних стилів */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  
+  /* Розміри та форма */
+  padding: 12px 40px 12px 16px;
+  border-radius: 12px;
   width: 100%;
   box-sizing: border-box;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.7);
+  margin-top: 6px;
+  
+  /* Кольори та типографіка */
+  background-color: rgba(255, 255, 255, 0.9);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  border: 2px solid #e2e8f0;
+  color: #334155;
+  font-family: inherit;
+  font-size: 16px;
   cursor: pointer;
+  
+  /* Плавність */
   transition: all 0.3s ease;
-  color: var(--text-primary);
 }
 
+/* Hover стан */
+select:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+/* Focus стан */
 select:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(0, 97, 255, 0.1);
-  background: rgba(255, 255, 255, 1);
+  border-color: #0061ff;
+  box-shadow: 0 0 0 4px rgba(0, 97, 255, 0.15);
+  background-color: rgba(255, 255, 255, 1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%230061ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+/* Disabled стан */
+select:disabled {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 form label {
   display: block;
