@@ -22,7 +22,9 @@ body {
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   margin: 0;
   line-height: 1.6;
-  color: var(--text-primary);
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 .card {
   background: rgba(255, 255, 255, 0.9);
@@ -83,34 +85,43 @@ header {
   margin-bottom: 20px;
 }
 h1 {
-  margin: 0 0 12px 0;
+  margin: 0 0 20px 0;
   font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.5px;
-  color: var(--text-primary);
+  letter-spacing: -0.025em;
+  color: #0f172a;
 }
 .rating {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   margin: 12px 0;
   align-items: center;
+  flex-wrap: wrap;
+  position: relative;
 }
 
-/* Приховування стандартних радіо-кнопок */
 .rating input[type="radio"] {
-  display: none;
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  appearance: none;
+  margin: 0;
 }
 
 /* Стан "Неактивний" (за замовчуванням) */
 .rating label {
+  margin: 0 !important;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 45px;
-  height: 45px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  box-sizing: border-box;
+  border-radius: 12px;
   border: 2px solid #e2e8f0;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   color: #64748b;
   cursor: pointer;
   font-weight: 600;
@@ -184,11 +195,6 @@ button:disabled {
   background: #ccc;
   cursor: not-allowed;
   box-shadow: none;
-}
-.muted {
-  color: #666;
-  margin-top: 10px;
-  font-size: 14px;
 }
 .controls {
   display: flex;
@@ -301,12 +307,19 @@ form label {
   margin-top: 14px;
   margin-bottom: 6px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #475569;
   font-size: 14px;
 }
 
 form label:first-child {
   margin-top: 0;
+}
+
+.muted {
+  color: #64748b;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 400;
 }
 
 /* AI Блок */

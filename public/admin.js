@@ -216,6 +216,7 @@ function updateAnalytics() {
   const labels = ['1', '2', '3', '4', '5'];
   const data = counts;
   if (!chart) {
+    const barGradient = chartCtx.createLinearGradient(0, 0, 0, 300);
     chart = new Chart(chartCtx, {
       type: 'bar',
       data: {
@@ -223,31 +224,82 @@ function updateAnalytics() {
         datasets: [{ 
           label: 'Кількість оцінок', 
           data,
-          backgroundColor: 'rgba(0, 123, 255, 0.7)',
-          borderColor: 'rgba(0, 123, 255, 1)',
-          borderWidth: 1
+          backgroundColor: 'rgba(99, 102, 241, 0.85)',
+          hoverBackgroundColor: '#4f46e5',
+          borderRadius: 6,
+          borderSkipped: 'bottom',
+          barPercentage: 0.6,
+          categoryPercentage: 0.8
         }]
       },
-      options: { 
-        responsive: true, 
-        maintainAspectRatio: true,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 800,
+          easing: 'easeOutQuart'
+        },
+        font: {
+          family: 'system-ui, -apple-system, sans-serif'
+        },
         plugins: {
           legend: {
-            display: true,
-            position: 'top'
+            display: false
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            titleFont: {
+              size: 14,
+              family: 'system-ui'
+            },
+            bodyFont: {
+              size: 14,
+              family: 'system-ui'
+            },
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: false
           }
         },
         scales: {
           y: {
+            display: false,
             beginAtZero: true,
-            max: Math.max(...counts, 5)
+            suggestedMax: 5,
+            grace: '20%',
+            ticks: {
+              stepSize: 1
+            },
+            grid: {
+              display: false,
+              drawBorder: false
+            },
+            border: {
+              display: false
+            }
+          },
+          x: {
+            grid: {
+              display: false,
+              drawBorder: false,
+              drawTicks: false
+            },
+            border: {
+              display: false
+            },
+            ticks: {
+              color: '#64748b',
+              font: {
+                weight: '600'
+              }
+            }
           }
         }
       }
     });
   } else {
     chart.data.datasets[0].data = data;
-    chart.options.scales.y.max = Math.max(...counts, 5);
     chart.update();
   }
 }
