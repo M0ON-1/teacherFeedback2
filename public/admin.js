@@ -27,6 +27,7 @@ const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const loginError = document.getElementById('loginError');
 const logoutBtn = document.getElementById('logoutBtn');
+const adminTitle = document.getElementById('adminTitle');
 
 const toggle = document.getElementById('toggle');
 const avgEl = document.getElementById('avg');
@@ -41,10 +42,24 @@ let allFeedbacks = []; // Зберігати всі відгуки виклад�
 let teacherSubjects = []; // Предмети поточного викладача
 
 // Авторизація
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
     // Користувач увійшов
     currentUser = user; // Зберігти поточного користувача
+    
+    try {
+      // Завантажити ім'я викладача з Firestore
+      const docSnap = await getDoc(doc(db, 'teachers', user.uid));
+      if (docSnap.exists() && docSnap.data().name) {
+        adminTitle.textContent = "Hello! " + docSnap.data().name;
+      } else {
+        adminTitle.textContent = "Панель викладача";
+      }
+    } catch (error) {
+      console.error('Помилка завантаження імені викладача:', error);
+      adminTitle.textContent = "Панель викладача";
+    }
+    
     loginContainer.style.display = 'none';
     adminContent.style.display = 'block';
     loadStatus();
@@ -53,6 +68,7 @@ onAuthStateChanged(auth, (user) => {
   } else {
     // Користувач не увійшов
     currentUser = null;
+    adminTitle.textContent = "Відгуки";
     loginContainer.style.display = 'block';
     adminContent.style.display = 'none';
     stopListening();
